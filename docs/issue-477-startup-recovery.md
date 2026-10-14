@@ -1,25 +1,11 @@
-# Issue 477: startup adapter recovery
+# Startup launch-guard ownership (#477)
 
-Tracking: https://github.com/storytold/effectcraft/issues/477
+Refs https://github.com/storytold/effectcraft/issues/477.
 
-Status: investigation placeholder. No production behavior has changed, and the reported recurrence has not yet been reproduced on current main.
+The investigation reproduced a separate concurrent-launch ownership bug: a second process could remove the live launch's pending marker, and locking then unlinking the marker did not provide a stable ownership boundary. This does not establish recurrence of the original Linux/NVIDIA surface error on current main.
 
-## Scope
+The implementation uses a persistent launch.lock file, acquires ownership before reading or changing recovery state, respects an older version's locked pending marker, and removes the owned pending marker before releasing the guard. A non-owner leaves another launch's marker and preferences alone. WGPU_BACKEND overrides remain authoritative.
 
-Investigate the startup failure reporting that no suitable graphics adapter was found, with Vulkan not requested and the OpenGL backend incompatible with the window surface. Review the existing 0.7.0 launch-guard fix (384c8cc0943236c4590034b069efb8d111895d98) before changing behavior. Keep this separate from GPU compositing failures after a window has opened.
+Validation on Linux with Rust 1.99.0: native workspace 3,412 passed, 0 failed, 26 ignored; release startup follow-up 40 unit and 3 argument tests passed; formatting, strict release Clippy, layers and assets passed. The offline WASM-only retry checked all 32 crates successfully after checksum-verified reuse of existing local crate archives. Earlier aggregate commands had stopped at a missing offline dependency; the native suite was not rerun for that retry. One unchanged unused-variable WASM warning remains in pointer_wrap.rs.
 
-## Planned validation
-
-- Trace Automatic and explicitly selected graphics backends, environment overrides, persisted preferences, and launch-pending recovery.
-- Exercise stale and live launch markers, failed OpenGL initialization, and the next launch after failure.
-- Reproduce the reported Linux/NVIDIA surface combination where the available test environment permits; document any hardware gap.
-- Add a focused failing regression before a production fix, preserve explicit user choices, and avoid silent permanent backend changes.
-- Run the affected tests and required repository checks; record only checks actually executed.
-
-## Current evidence
-
-The original report is closed, with a maintainer comment identifying a fix in 0.7.0. A matching error screenshot prompted this follow-up. The screenshot alone does not establish the application version or prove that the same cause remains in current main.
-
-## Tests
-
-Not run for this planning-only placeholder. Implementation and validation remain pending.
+Actual patched-release initialization failure/recovery and explicit-backend assertions passed. Linux software-rendered startup was exercised; physical NVIDIA hardware and native macOS startup were not tested.
