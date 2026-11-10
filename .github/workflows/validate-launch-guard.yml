@@ -1,0 +1,22 @@
+name: Validate launch guard on hosted runners
+
+on:
+  push:
+    branches: [validation/1459-launch-guard-20261110]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    uses: storytold/craft-common-actions/.github/workflows/gate.yml@main
+    with:
+      os: '["ubuntu-24.04", "windows-latest"]'
+      timeout-minutes: 120
+      command: cargo xtask ci
+      windows-command: cargo test --locked -p effectcraft launch_guard::
+      packages: >-
+        pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev
+        libxrandr-dev libxi-dev libfontconfig1-dev libfreetype-dev mesa-vulkan-drivers
+        libgl1-mesa-dev libasound2-dev
