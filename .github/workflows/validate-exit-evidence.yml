@@ -1,0 +1,17 @@
+name: Validate exit evidence on hosted Windows
+
+on:
+  push:
+    branches: [validation/3357-exit-evidence-20261110]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    uses: storytold/craft-common-actions/.github/workflows/gate.yml@main
+    with:
+      os: '["windows-latest"]'
+      timeout-minutes: 120
+      windows-command: 'cargo test --locked -p effectcraft'
