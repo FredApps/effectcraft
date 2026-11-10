@@ -1,0 +1,27 @@
+name: Validate crash replay on hosted runners
+
+on:
+  push:
+    branches: [validation/1224-crash-replay-20261110]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    uses: storytold/craft-common-actions/.github/workflows/gate.yml@main
+    with:
+      os: '["ubuntu-24.04", "windows-latest"]'
+      timeout-minutes: 120
+      command: cargo xtask ci
+      windows-command: |
+        cargo test --locked -p effectcraft-engine --lib replay
+        cargo test --locked -p effectcraft-host --test it repros::
+        cargo test --locked -p effectcraft-cli --test it replay
+        cargo test --locked -p effectcraft-automation confined_repro_export
+        cargo test --locked -p xtask affected
+      packages: >-
+        pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev
+        libxrandr-dev libxi-dev libfontconfig1-dev libfreetype-dev mesa-vulkan-drivers
+        libgl1-mesa-dev libasound2-dev
