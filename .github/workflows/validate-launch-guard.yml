@@ -15,7 +15,7 @@ jobs:
       os: '["ubuntu-24.04", "windows-latest"]'
       timeout-minutes: 120
       command: cargo xtask ci
-      windows-command: cargo test --locked -p effectcraft launch_guard::
+      windows-command: 'cargo test --locked -p effectcraft launch_guard::'
       packages: >-
         pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxcursor-dev
         libxrandr-dev libxi-dev libfontconfig1-dev libfreetype-dev mesa-vulkan-drivers
