@@ -1,0 +1,36 @@
+name: Effect 3868 Windows model dependency cache pilot
+on:
+  push:
+    branches: [validation/effect-3868-windows-cache-pilot]
+permissions:
+  contents: read
+concurrency:
+  group: effect-3868-windows-cache-pilot
+  cancel-in-progress: false
+jobs:
+  windows:
+    uses: storytold/craft-common-actions/.github/workflows/gate.yml@ecb64b2acb8731f0e2eb8f55fd2f45424bef75d0
+    with:
+      os: '["windows-latest"]'
+      select-os: '[]'
+      timeout-minutes: 12
+      gate-timeout-minutes: 10
+      tools: ""
+      targets: ""
+      craft-fonts-ref: ""
+      require-craft-fonts: false
+      sccache: true
+      cache-name: effect3868-pilot
+      env: |
+        SCCACHE_GHA_RW_MODE=READ_WRITE
+        SCCACHE_GHA_VERSION=effect3868-cc0a7f83-model-pilot-v1
+      command: |
+        git fetch --no-tags origin cc0a7f838a3e6c51d9dac14904a501a4092a49c7
+        git diff --exit-code cc0a7f838a3e6c51d9dac14904a501a4092a49c7 HEAD -- . ':(exclude).github/workflows/validate-effect-3868-cache-pilot.yml'
+        echo "Dependency-only pilot: model library; no test or merge certification"
+        sccache --zero-stats
+        status=0
+        cargo build --profile test -p effectcraft-model --lib --locked || status=$?
+        sccache --show-stats
+        sccache --show-stats --stats-format json
+        test "$status" -eq 0
