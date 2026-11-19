@@ -83,3 +83,44 @@ fn vector_masks_preserve_short_header_and_empty_path_recovery() {
         }
     }
 }
+
+#[test]
+fn vector_writer_fixed_point_edge_bytes_are_preserved() {
+    // Expected signed 8.24 values are literal constants, not the shared encoder.
+    for (fraction, fixed) in [
+        (0.0, 0i32),
+        (-0.0, 0),
+        (1.0 / 33_554_432.0, 1),
+        (-1.0 / 33_554_432.0, -1),
+        (127.999_999_940_395_36, 2_147_483_647),
+        (128.0, 2_147_483_647),
+        (-128.0, -2_147_483_648),
+        (-129.0, -2_147_483_648),
+        (f64::MAX, 2_147_483_647),
+        (f64::MIN, -2_147_483_648),
+        (f64::INFINITY, 2_147_483_647),
+        (f64::NEG_INFINITY, -2_147_483_648),
+        (f64::NAN, 0),
+    ] {
+        let block = vector_mask_block(&[vec![[[fraction, fraction]; 3]]], 1, 1, false);
+        assert_eq!(block.0, *b"vmsk");
+        let mut expected = vec![0, 0, 0, 3, 0, 0, 0, 0, 0, 6];
+        expected.extend([0; 24]); // Fill rule.
+        expected.extend([0, 0, 0, 1]);
+        expected.extend([0; 22]); // Closed length, count one, reserved zeros.
+        expected.extend([0, 1]); // Linked closed knot.
+        for _ in 0..6 {
+            expected.extend(fixed.to_be_bytes());
+        }
+        assert_eq!(block.1, expected, "{fraction:?}");
+    }
+}
+
+#[test]
+fn vector_writer_normalization_and_y_first_order_are_preserved() {
+    let block = vector_mask_block(&[vec![[[2.0, 6.0], [-2.0, 3.0], [4.0, -6.0]]]], 4, 6, true);
+    assert_eq!(&block.1[..8], &[0, 0, 0, 3, 0, 0, 0, 1]);
+    assert_eq!(&block.1[62..], &[1, 0, 0, 0, 0, 128, 0, 0, 0, 128, 0, 0, 255, 128, 0, 0, 255, 0, 0, 0, 1, 0, 0, 0]);
+    let zero = vector_mask_block(&[vec![[[1.0, -1.0], [0.0, -0.0], [-1.0, 1.0]]]], 0, 0, false);
+    assert_eq!(&zero.1[62..], &[128, 0, 0, 0, 127, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 127, 255, 255, 255, 128, 0, 0, 0]);
+}

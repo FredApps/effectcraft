@@ -466,7 +466,7 @@ pub fn vector_mask_block(subpaths: &[Vec<[[f64; 2]; 3]>], width: u32, height: u3
     // Path fill rule record.
     put_u16(&mut d, 6);
     d.resize(d.len() + 24, 0);
-    let fx = |v: f64| ((v * (1 << 24) as f64).round() as i32).to_be_bytes();
+    let fx = |v: f64| craft_psd::path::f64_to_fixed(v).to_be_bytes();
     for sp in subpaths {
         put_u16(&mut d, 0);
         put_u16(&mut d, sp.len() as u16);
