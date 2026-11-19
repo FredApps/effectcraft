@@ -1,0 +1,36 @@
+name: Effect PSD package diagnostic (not whole-app certification)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: effect-psd-package-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  psd:
+    uses: storytold/craft-common-actions/.github/workflows/gate.yml@7d4597abb21f0a8fa959395b0789e79fa19849ca
+    with:
+      os: '["ubuntu-24.04","windows-latest","macos-latest"]'
+      select-os: '[]'
+      craft-fonts-ref: ""
+      require-craft-fonts: false
+      targets: ""
+      tools: ""
+      free-disk-space: false
+      timeout-minutes: 30
+      gate-timeout-minutes: 25
+      # This package declares no features. Its dev dependency enables craft-psd/testgen.
+      # Generated fixtures are in-process; no optional external corpus is consumed here.
+      # Shared craft-psd feature/corpus tests run in the separate library diagnostic.
+      command: |
+        set -euo pipefail
+        cargo fmt -p effectcraft-psd --check
+        cargo test -p effectcraft-psd --locked --all-targets
+        cargo test -p effectcraft-psd --locked --doc
+        cargo build -p effectcraft-psd --locked --examples
+        cargo doc -p effectcraft-psd --locked --no-deps
+        cargo clippy -p effectcraft-psd --locked --all-targets -- -D warnings
